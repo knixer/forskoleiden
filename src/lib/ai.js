@@ -39,7 +39,11 @@ async function sendToClaude(settings, message) {
     throw new Error("Anthropic API key is not configured. Please add it in Settings.");
   }
 
-  const response = await fetch("/anthropic/v1/messages", {
+  const url = import.meta.env.PROD
+    ? "https://api.anthropic.com/v1/messages"
+    : "/anthropic/v1/messages";
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
