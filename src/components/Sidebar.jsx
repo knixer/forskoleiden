@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { UserPlus, Trash2, Settings, ChevronRight } from "lucide-react";
 
-export default function Sidebar({ children, selected, onSelect, onAdd, onDelete, onOpenSettings }) {
+export default function Sidebar({ children, selected, onSelect, onAdd, onDelete, onOpenSettings, isOpen }) {
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const [hoveredId, setHoveredId] = useState(null);
@@ -20,7 +20,7 @@ export default function Sidebar({ children, selected, onSelect, onAdd, onDelete,
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       <div className="sidebar-header">
         <div className="app-brand">
           <span className="brand-mark">◈</span>

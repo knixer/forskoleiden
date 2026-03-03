@@ -11,6 +11,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [aiSettings, setAiSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -34,6 +35,7 @@ export default function App() {
     const newChild = { id, name, created_at: new Date().toISOString() };
     setChildren((prev) => [...prev, newChild].sort((a, b) => a.name.localeCompare(b.name)));
     setSelectedChild(newChild);
+    setSidebarOpen(false);
   }
 
   async function handleDeleteChild(child) {
@@ -56,18 +58,26 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
       <Sidebar
         children={children}
         selected={selectedChild}
-        onSelect={setSelectedChild}
+        onSelect={(child) => { setSelectedChild(child); setSidebarOpen(false); }}
         onAdd={handleAddChild}
         onDelete={handleDeleteChild}
         onOpenSettings={() => setShowSettings(true)}
+        isOpen={sidebarOpen}
       />
 
       <main className="main-content">
         {selectedChild ? (
-          <NoteView child={selectedChild} aiSettings={aiSettings} />
+          <NoteView
+            child={selectedChild}
+            aiSettings={aiSettings}
+            onMenuClick={() => setSidebarOpen(true)}
+          />
         ) : (
           <div className="empty-state">
             <div className="empty-icon">📋</div>

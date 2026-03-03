@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Bot, Loader } from "lucide-react";
+import { Plus, Bot, Loader, Menu } from "lucide-react";
 import { fetchNotes, addNote, updateNote, deleteNote } from "../lib/db";
 import NoteCard from "./NoteCard";
 import AIPanel from "./AIPanel";
 
-export default function NoteView({ child, aiSettings }) {
+export default function NoteView({ child, aiSettings, onMenuClick }) {
   const [notes, setNotes] = useState([]);
   const [newContent, setNewContent] = useState("");
   const [showAI, setShowAI] = useState(false);
@@ -59,6 +59,9 @@ export default function NoteView({ child, aiSettings }) {
       {/* Header */}
       <div className="note-view-header">
         <div className="note-view-title-row">
+          <button className="mobile-menu-btn" onClick={onMenuClick} aria-label="Open menu">
+            <Menu size={18} />
+          </button>
           <div className="child-header-avatar">{child.name[0].toUpperCase()}</div>
           <h1 className="note-view-title">{child.name}</h1>
           <div className="note-count-badge">{notes.length} note{notes.length !== 1 ? "s" : ""}</div>
