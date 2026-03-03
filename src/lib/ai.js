@@ -35,7 +35,10 @@ ${userPrompt ? `\nUser's question/request: ${userPrompt}` : "Please provide a br
 // ── Anthropic Claude ─────────────────────────────────────────────────────────
 
 async function sendToClaude(settings, message) {
-  if (!settings.claude_api_key) {
+  // Use the app-level env var key first, fall back to user-configured key
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.claude_api_key;
+
+  if (!apiKey) {
     throw new Error("Anthropic API key is not configured. Please add it in Settings.");
   }
 
@@ -47,7 +50,7 @@ async function sendToClaude(settings, message) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": settings.claude_api_key,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
       "anthropic-dangerous-direct-browser-access": "true",
     },

@@ -54,24 +54,27 @@ export default function SettingsModal({ initial, onSave, onClose }) {
           {/* Claude settings */}
           {settings.provider === "claude" && (
             <div className="settings-group">
-              <div className="settings-section">
-                <label className="settings-label">Anthropic API Key</label>
-                <div className="input-with-icon">
-                  <input
-                    type={showKey ? "text" : "password"}
-                    className="settings-input"
-                    placeholder="sk-ant-…"
-                    value={settings.claude_api_key || ""}
-                    onChange={(e) => set("claude_api_key", e.target.value)}
-                  />
-                  <button className="input-icon-btn" onClick={() => setShowKey((v) => !v)}>
-                    {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
+              {/* Only show API key input if no app-level key is configured */}
+              {!import.meta.env.VITE_ANTHROPIC_API_KEY && (
+                <div className="settings-section">
+                  <label className="settings-label">Anthropic API Key</label>
+                  <div className="input-with-icon">
+                    <input
+                      type={showKey ? "text" : "password"}
+                      className="settings-input"
+                      placeholder="sk-ant-…"
+                      value={settings.claude_api_key || ""}
+                      onChange={(e) => set("claude_api_key", e.target.value)}
+                    />
+                    <button className="input-icon-btn" onClick={() => setShowKey((v) => !v)}>
+                      {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <p className="settings-hint">
+                    Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer">console.anthropic.com</a>
+                  </p>
                 </div>
-                <p className="settings-hint">
-                  Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noreferrer">console.anthropic.com</a>
-                </p>
-              </div>
+              )}
               <div className="settings-section">
                 <label className="settings-label">Model</label>
                 <select
