@@ -1,15 +1,83 @@
-// src/lib/db.js
-// Storage layer — uses localStorage.
+﻿// src/lib/db.js
+// Data layer  all persistence via Supabase.
 
-// ── localStorage helpers (browser mode only) ─────────────────────────────────
+import { supabase } from "./supabase";
 
-const LS = {
-  get: (key, fallback) => {
-    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-    catch { return fallback; }
-  },
-  set: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
-};
+function raise(error) {
+  if (error) throw new Error(error.message);
+}
+
+//  Children 
+
+export async function fetchChildren() {
+  const { data, error } = await supabase
+    .from("children")
+    .select("*")
+    .order("name", { ascending: true });
+  raise(error);
+  return data;
+}
+
+export async function addChild(name) {
+  const { data, error } = await supabase
+    .from("children")
+    .insert({ name })
+    .select("id")
+    .single();
+  raise(error);
+  return data.id;
+}
+
+export async function deleteChild(id) {
+  const { error } = await supabase.from("children").delete().eq("id", id);
+  raise(error);
+}
+
+//  Notes 
+
+export async function fetchNotes(childId) {
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("child_id", childId)
+    .order("created_at", { ascending: false });
+  raise(error);
+  return data;
+}
+
+export async function addNote(childId, content) {
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({ child_id: childId, content })
+    .select("id")
+    .single();
+  raise(error);
+  return data.id;
+}
+
+export async function updateNote(id, content) {
+  const { error } = await supabase
+    .from("notes")
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  raise(error);
+}
+
+export async function deleteNote(id) {
+  const { error } = await supabase.from("notes").delete().eq("id", id);
+  raise(error);
+}
+
+//  AI Summaries 
+
+export async function saveAiSummary(childId, prompt, response) {
+  const { error } = await supabase
+    .from("ai_summaries")
+    .insert({ child_id: childId, prompt, response });
+  raise(error);
+}
+
+//  AI Settings 
 
 const DEFAULT_AI_SETTINGS = {
   id: 1,
@@ -21,61 +89,19 @@ const DEFAULT_AI_SETTINGS = {
   system_prompt: "You are a helpful assistant reviewing child care documentation. Be concise and insightful.",
 };
 
-let _nextId = () => Date.now() + Math.floor(Math.random() * 1000);
-
-// ── Children ─────────────────────────────────────────────────────────────────
-
-export async function fetchChildren() {
-  return LS.get("children", []).sort((a, b) => a.name.localeCompare(b.name));
-}
-
-export async function addChild(name) {
-  const children = LS.get("children", []);
-  const id = _nextId();
-  children.push({ id, name, created_at: new Date().toISOString() });
-  LS.set("children", children);
-  return id;
-}
-
-export async function deleteChild(id) {
-  LS.set("children", LS.get("children", []).filter((c) => c.id !== id));
-  LS.set("notes", LS.get("notes", []).filter((n) => n.child_id !== id));
-}
-
-// ── Notes ─────────────────────────────────────────────────────────────────────
-
-export async function fetchNotes(childId) {
-  return LS.get("notes", [])
-    .filter((n) => n.child_id === childId)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-}
-
-export async function addNote(childId, content) {
-  const notes = LS.get("notes", []);
-  const id = _nextId();
-  const now = new Date().toISOString();
-  notes.push({ id, child_id: childId, content, created_at: now, updated_at: now });
-  LS.set("notes", notes);
-  return id;
-}
-
-export async function updateNote(id, content) {
-  const notes = LS.get("notes", []);
-  const i = notes.findIndex((n) => n.id === id);
-  if (i !== -1) notes[i] = { ...notes[i], content, updated_at: new Date().toISOString() };
-  LS.set("notes", notes);
-}
-
-export async function deleteNote(id) {
-  LS.set("notes", LS.get("notes", []).filter((n) => n.id !== id));
-}
-
-// ── AI Settings ───────────────────────────────────────────────────────────────
-
 export async function fetchAiSettings() {
-  return LS.get("ai_settings", DEFAULT_AI_SETTINGS);
+  const { data, error } = await supabase
+    .from("ai_settings")
+    .select("*")
+    .eq("id", 1)
+    .single();
+  if (error) return DEFAULT_AI_SETTINGS;
+  return data;
 }
 
 export async function saveAiSettings(settings) {
-  LS.set("ai_settings", { ...settings, id: 1 });
+  const { error } = await supabase
+    .from("ai_settings")
+    .upsert({ ...settings, id: 1 });
+  raise(error);
 }

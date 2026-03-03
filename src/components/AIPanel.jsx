@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, Loader, AlertCircle, Sparkles, RefreshCw } from "lucide-react";
 import { sendToAI } from "../lib/ai";
+import { saveAiSummary } from "../lib/db";
 
 const QUICK_PROMPTS = [
   "Summarize recent progress",
@@ -36,6 +37,8 @@ export default function AIPanel({ child, notes, aiSettings }) {
     try {
       const reply = await sendToAI(aiSettings, child.name, notes, userText);
       setMessages((prev) => [...prev, { role: "ai", text: reply }]);
+      // Persist the exchange to Supabase (fire-and-forget)
+      saveAiSummary(child.id, userText, reply).catch(console.error);
     } catch (e) {
       setError(e.message);
     } finally {
