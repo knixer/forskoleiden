@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Plus, Loader, RefreshCw, Mic, MicOff } from "lucide-react";
 import { TOPICS } from "../lib/topics";
 import { addNote, updateNote, deleteNote, saveTopicAlert } from "../lib/db";
-import { analyzeTopicNotes } from "../lib/ai";
+import { analyzeTopicNotes, cleanTranscript } from "../lib/ai";
 import NoteCard from "./NoteCard";
 
 /**
@@ -17,6 +17,7 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(null); // topicId currently being analyzed
   const [isListening, setIsListening] = useState(false);
+  const [cleaningUp, setCleaningUp] = useState(false);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -58,7 +59,18 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
       setNewContent(committedText + interim);
     };
 
-    recognition.onend = () => setIsListening(false);
+    recognition.onend = async () => {
+      setIsListening(false);
+      const raw = committedText;
+      if (!raw.trim()) return;
+      setCleaningUp(true);
+      try {
+        const cleaned = await cleanTranscript(aiSettings, raw);
+        setNewContent(cleaned);
+      } finally {
+        setCleaningUp(false);
+      }
+    };
     recognition.onerror = () => setIsListening(false);
 
     recognition.start();
@@ -177,11 +189,16 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
                 <button
                   className={`mic-btn${isListening ? " active" : ""}`}
                   onClick={toggleListening}
+                  disabled={cleaningUp}
                   title={isListening ? "Stop recording" : "Dictate note"}
                   type="button"
                 >
-                  {isListening ? <MicOff size={14} /> : <Mic size={14} />}
-                  {isListening ? "Stop" : "Dictate"}
+                  {cleaningUp
+                    ? <><Loader size={14} className="spin" /> Cleaning up…</>
+                    : isListening
+                      ? <><MicOff size={14} /> Stop</>
+                      : <><Mic size={14} /> Dictate</>
+                  }
                 </button>
               )}
               <button

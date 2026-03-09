@@ -73,6 +73,39 @@ async function sendToClaude(settings, message) {
   return data.content?.[0]?.text ?? "(No response)";
 }
 
+// ── Transcript Cleanup ───────────────────────────────────────────────────────
+// Takes a raw speech-to-text transcript and returns it with proper punctuation,
+// capitalization and paragraph breaks — using Claude (fast, low token count).
+
+export async function cleanTranscript(settings, rawText) {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings?.claude_api_key;
+  if (!apiKey) return rawText; // no key — return as-is
+
+  const url = import.meta.env.PROD
+    ? "https://api.anthropic.com/v1/messages"
+    : "/anthropic/v1/messages";
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: settings?.claude_model || "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      system: "You are a transcription editor. Add punctuation, capitalization and natural sentence breaks to raw speech-to-text output. Preserve every word and meaning exactly — do not summarize, translate, or change the language. Return only the corrected text with no commentary.",
+      messages: [{ role: "user", content: rawText }],
+    }),
+  });
+
+  if (!response.ok) return rawText; // on error return original
+  const data = await response.json();
+  return data.content?.[0]?.text ?? rawText;
+}
+
 // ── Topic Analysis ───────────────────────────────────────────────────────────
 // Uses a hardcoded developer-defined system prompt and expects a JSON response.
 
