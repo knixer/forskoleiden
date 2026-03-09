@@ -224,8 +224,8 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
                   <div className="topic-alert-suggestion">
                     <span>💡</span>
                     <ul>
-                      {currentAlert.suggestion.split("\n").filter(Boolean).map((point, i) => (
-                        <li key={i}>{point.replace(/^•\s*/, "")}</li>
+                      {currentAlert.suggestion.split(/[\n•]+/).filter(s => s.trim()).map((point, i) => (
+                        <li key={i}>{point.trim()}</li>
                       ))}
                     </ul>
                   </div>
