@@ -45,10 +45,10 @@ export async function fetchNotes(childId) {
   return data;
 }
 
-export async function addNote(childId, content) {
+export async function addNote(childId, topicId, content) {
   const { data, error } = await supabase
     .from("notes")
-    .insert({ child_id: childId, content })
+    .insert({ child_id: childId, topic_id: topicId, content })
     .select("id")
     .single();
   raise(error);
@@ -66,6 +66,45 @@ export async function updateNote(id, content) {
 export async function deleteNote(id) {
   const { error } = await supabase.from("notes").delete().eq("id", id);
   raise(error);
+}
+
+//  Topic Alerts 
+
+export async function fetchTopicAlerts(childId) {
+  const { data, error } = await supabase
+    .from("topic_alerts")
+    .select("topic_id, alert_level, response, suggestion, analyzed_at")
+    .eq("child_id", childId);
+  if (error) return {}; // table may not exist yet — fail silently
+  const map = {};
+  for (const row of data) {
+    map[row.topic_id] = { level: row.alert_level, response: row.response, suggestion: row.suggestion, analyzedAt: row.analyzed_at };
+  }
+  return map;
+}
+
+export async function saveTopicAlert(childId, topicId, alertLevel, response, suggestion) {
+  const { error } = await supabase
+    .from("topic_alerts")
+    .upsert(
+      { child_id: childId, topic_id: topicId, alert_level: alertLevel, response, suggestion, analyzed_at: new Date().toISOString() },
+      { onConflict: "child_id,topic_id" }
+    );
+  raise(error);
+}
+
+// Returns { childId: { topicId: level } } — used by App to show worst alert per child in sidebar.
+export async function fetchAllChildAlerts() {
+  const { data, error } = await supabase
+    .from("topic_alerts")
+    .select("child_id, topic_id, alert_level");
+  raise(error);
+  const result = {};
+  for (const row of data) {
+    if (!result[row.child_id]) result[row.child_id] = {};
+    result[row.child_id][row.topic_id] = row.alert_level;
+  }
+  return result;
 }
 
 //  AI Summaries 

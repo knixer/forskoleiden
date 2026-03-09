@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { UserPlus, Trash2, Settings, ChevronRight } from "lucide-react";
 
-export default function Sidebar({ children, selected, onSelect, onAdd, onDelete, onOpenSettings, isOpen }) {
+export default function Sidebar({ children, selected, onSelect, onAdd, onDelete, onOpenSettings, isOpen, childAlerts = {} }) {
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const [hoveredId, setHoveredId] = useState(null);
@@ -69,6 +69,9 @@ export default function Sidebar({ children, selected, onSelect, onAdd, onDelete,
             <div className="child-avatar">{child.name[0].toUpperCase()}</div>
             <span className="child-name">{child.name}</span>
             <div className="child-item-right">
+              {childAlerts[child.id] && (
+                <span className={`alert-dot ${childAlerts[child.id]}`} title={`Alert: ${childAlerts[child.id]}`} />
+              )}
               {hoveredId === child.id && selected?.id !== child.id && (
                 <button
                   className="child-delete-btn"

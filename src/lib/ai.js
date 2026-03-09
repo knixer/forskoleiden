@@ -73,6 +73,88 @@ async function sendToClaude(settings, message) {
   return data.content?.[0]?.text ?? "(No response)";
 }
 
+// ── Topic Analysis ───────────────────────────────────────────────────────────
+// Uses a hardcoded developer-defined system prompt and expects a JSON response.
+
+/**
+ * Run a topic-specific AI analysis over a set of notes.
+ * The topicPrompt is the hardcoded system instruction from src/lib/topics.js.
+ * Returns the raw text from the AI (expected to be a JSON string).
+ */
+export async function analyzeTopicNotes(settings, childName, notes, topicPrompt) {
+  const notesText = notes.length > 0
+    ? notes.map((n) => `[${new Date(n.created_at).toLocaleString()}]\n${n.content}`).join("\n\n---\n\n")
+    : "(No notes documented yet for this topic)";
+
+  const userMessage = `Reviewing documentation for a child named "${childName}".\n\nNotes for this topic:\n\n${notesText}`;
+
+  if (settings.provider === "claude") {
+    return await callClaudeForTopic(settings, topicPrompt, userMessage);
+  } else if (settings.provider === "ollama") {
+    return await callOllamaForTopic(settings, topicPrompt, userMessage);
+  } else {
+    throw new Error(`Unknown AI provider: ${settings.provider}`);
+  }
+}
+
+async function callClaudeForTopic(settings, systemPrompt, userMessage) {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.claude_api_key;
+  if (!apiKey) throw new Error("Anthropic API key is not configured. Please add it in Settings.");
+
+  const url = import.meta.env.PROD
+    ? "https://api.anthropic.com/v1/messages"
+    : "/anthropic/v1/messages";
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: settings.claude_model || "claude-sonnet-4-20250514",
+      max_tokens: 256,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Claude API error ${response.status}: ${err?.error?.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.content?.[0]?.text ?? "{}";
+}
+
+async function callOllamaForTopic(settings, systemPrompt, userMessage) {
+  const baseUrl = (settings.ollama_base_url || "http://localhost:11434").replace(/\/$/, "");
+  const model = settings.ollama_model || "llama3";
+
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      stream: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama error ${response.status}: ${response.statusText}. Is Ollama running at ${baseUrl}?`);
+  }
+
+  const data = await response.json();
+  return data.message?.content ?? "{}";
+}
+
 // ── Ollama (local) ────────────────────────────────────────────────────────────
 
 async function sendToOllama(settings, message) {

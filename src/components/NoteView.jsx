@@ -1,57 +1,59 @@
-import { useState, useEffect, useRef } from "react";
-import { Plus, Bot, Loader, Menu } from "lucide-react";
-import { fetchNotes, addNote, updateNote, deleteNote } from "../lib/db";
-import NoteCard from "./NoteCard";
+import { useState, useEffect } from "react";
+import { Bot, Loader, Menu } from "lucide-react";
+import { fetchNotes, fetchTopicAlerts } from "../lib/db";
+import { TOPICS } from "../lib/topics";
+import TopicPanel from "./TopicPanel";
 import AIPanel from "./AIPanel";
 
-export default function NoteView({ child, aiSettings, onMenuClick }) {
-  const [notes, setNotes] = useState([]);
-  const [newContent, setNewContent] = useState("");
+export default function NoteView({ child, aiSettings, onMenuClick, onAlertChange }) {
+  const [notesByTopic, setNotesByTopic] = useState({});
+  const [topicAlerts, setTopicAlerts] = useState({});
   const [showAI, setShowAI] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const textareaRef = useRef(null);
 
   useEffect(() => {
-    loadNotes();
+    loadData();
   }, [child.id]);
 
-  async function loadNotes() {
+  async function loadData() {
     setLoading(true);
     try {
-      const rows = await fetchNotes(child.id);
-      setNotes(rows);
+      const [allNotes, alerts] = await Promise.all([
+        fetchNotes(child.id),
+        fetchTopicAlerts(child.id),
+      ]);
+      // Group notes by topic_id; fall back to topic_1 for legacy rows
+      const grouped = Object.fromEntries(TOPICS.map((t) => [t.id, []]));
+      for (const note of allNotes) {
+        const key = note.topic_id ?? "topic_1";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(note);
+      }
+      setNotesByTopic(grouped);
+      setTopicAlerts(alerts);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAddNote() {
-    const content = newContent.trim();
-    if (!content) return;
-    setSaving(true);
-    try {
-      const id = await addNote(child.id, content);
-      const newNote = { id, child_id: child.id, content, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-      setNotes((prev) => [newNote, ...prev]);
-      setNewContent("");
-    } finally {
-      setSaving(false);
-    }
+  function handleNotesChange(topicId, newNotes) {
+    setNotesByTopic((prev) => ({ ...prev, [topicId]: newNotes }));
   }
 
-  async function handleUpdateNote(id, content) {
-    await updateNote(id, content);
-    setNotes((prev) => prev.map((n) => n.id === id ? { ...n, content, updated_at: new Date().toISOString() } : n));
+  function handleAlertChange(topicId, level, response, suggestion) {
+    setTopicAlerts((prev) => ({ ...prev, [topicId]: { level, response, suggestion } }));
+    onAlertChange?.(child.id, topicId, level);
   }
 
-  async function handleDeleteNote(id) {
-    await deleteNote(id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-  }
+  const totalNotes = Object.values(notesByTopic).reduce((sum, arr) => sum + arr.length, 0);
+  const allNotes = Object.values(notesByTopic).flat();
 
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAddNote();
+  if (loading) {
+    return (
+      <div className="note-view">
+        <div className="notes-loading"><Loader size={20} className="spin" /></div>
+      </div>
+    );
   }
 
   return (
@@ -64,7 +66,7 @@ export default function NoteView({ child, aiSettings, onMenuClick }) {
           </button>
           <div className="child-header-avatar">{child.name[0].toUpperCase()}</div>
           <h1 className="note-view-title">{child.name}</h1>
-          <div className="note-count-badge">{notes.length} note{notes.length !== 1 ? "s" : ""}</div>
+          <div className="note-count-badge">{totalNotes} note{totalNotes !== 1 ? "s" : ""}</div>
         </div>
         <button
           className={`ai-toggle-btn ${showAI ? "active" : ""}`}
@@ -76,63 +78,18 @@ export default function NoteView({ child, aiSettings, onMenuClick }) {
       </div>
 
       <div className="note-view-body">
-        {/* Notes column */}
-        <div className="notes-column">
-          {/* New note composer */}
-          <div className="note-composer">
-            <div className="composer-label">New documentation entry</div>
-            <textarea
-              ref={textareaRef}
-              className="composer-textarea"
-              placeholder="Document observations, behaviors, milestones…"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={4}
-            />
-            <div className="composer-footer">
-              <span className="composer-hint">⌘ + Enter to save</span>
-              <button
-                className="composer-submit"
-                onClick={handleAddNote}
-                disabled={!newContent.trim() || saving}
-              >
-                {saving ? <Loader size={14} className="spin" /> : <Plus size={14} />}
-                Add Entry
-              </button>
-            </div>
-          </div>
-
-          {/* Notes list */}
-          {loading ? (
-            <div className="notes-loading">
-              <Loader size={20} className="spin" />
-            </div>
-          ) : notes.length === 0 ? (
-            <div className="notes-empty">
-              <div className="notes-empty-icon">📝</div>
-              <p>No entries yet. Start documenting above.</p>
-            </div>
-          ) : (
-            <div className="notes-list">
-              {notes.map((note, i) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  index={i}
-                  onUpdate={handleUpdateNote}
-                  onDelete={handleDeleteNote}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* AI Panel */}
+        <TopicPanel
+          child={child}
+          notesByTopic={notesByTopic}
+          alerts={topicAlerts}
+          aiSettings={aiSettings}
+          onNotesChange={handleNotesChange}
+          onAlertChange={handleAlertChange}
+        />
         {showAI && (
           <AIPanel
             child={child}
-            notes={notes}
+            notes={allNotes}
             aiSettings={aiSettings}
           />
         )}
@@ -140,3 +97,4 @@ export default function NoteView({ child, aiSettings, onMenuClick }) {
     </div>
   );
 }
+
