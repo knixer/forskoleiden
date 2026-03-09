@@ -1147,6 +1147,17 @@ textarea.settings-input { resize: vertical; line-height: 1.6; min-height: 80px; 
   color: var(--accent-dark);
   line-height: 1.5;
 }
+.topic-alert-suggestion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.topic-alert-suggestion-label {
+  font-weight: 700;
+  color: var(--accent-dark);
+}
 .topic-alert-suggestion ul {
   margin: 0;
   padding: 0;
