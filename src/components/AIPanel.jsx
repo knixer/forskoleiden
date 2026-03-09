@@ -4,10 +4,10 @@ import { sendToAI } from "../lib/ai";
 import { saveAiSummary } from "../lib/db";
 
 const QUICK_PROMPTS = [
-  "Summarize recent progress",
-  "Identify patterns in behavior",
-  "Suggest areas to focus on",
-  "Any concerns to flag?",
+  "Sammanfatta senaste utveckling",
+  "Identifiera beteendemönster",
+  "Föreslå fokusområden",
+  "Några bekymmer att lyfta?",
 ];
 
 export default function AIPanel({ child, notes, aiSettings }) {
@@ -58,7 +58,7 @@ export default function AIPanel({ child, notes, aiSettings }) {
       <div className="ai-panel-header">
         <div className="ai-panel-title">
           <Sparkles size={15} />
-          <span>AI Assistant</span>
+          <span>AI-assistent</span>
         </div>
         <div className="ai-provider-badge">{providerLabel}</div>
       </div>
@@ -68,7 +68,7 @@ export default function AIPanel({ child, notes, aiSettings }) {
         <div className="ai-quick-prompts">
           <div className="ai-welcome">
             <Bot size={28} className="ai-welcome-icon" />
-            <p>Ask questions about {child.name}'s documentation</p>
+            <p>Ställ frågor om {child.name}s dokumentation</p>
           </div>
           <div className="quick-prompt-grid">
             {QUICK_PROMPTS.map((p) => (
@@ -127,7 +127,7 @@ export default function AIPanel({ child, notes, aiSettings }) {
         )}
         <textarea
           className="ai-input"
-          placeholder="Ask about this child's documentation…"
+          placeholder="Fråga om barnets dokumentation…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

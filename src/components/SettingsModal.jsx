@@ -25,14 +25,14 @@ export default function SettingsModal({ initial, onSave, onClose }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-header">
-          <h2 className="modal-title">AI Settings</h2>
+          <h2 className="modal-title">AI-inställningar</h2>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="modal-body">
           {/* Provider toggle */}
           <div className="settings-section">
-            <label className="settings-label">AI Provider</label>
+            <label className="settings-label">AI-leverantör</label>
             <div className="provider-toggle">
               <button
                 className={`provider-btn ${settings.provider === "claude" ? "active" : ""}`}
@@ -46,7 +46,7 @@ export default function SettingsModal({ initial, onSave, onClose }) {
                 onClick={() => set("provider", "ollama")}
               >
                 <Cpu size={16} />
-                Ollama (Local)
+                Ollama (Lokalt)
               </button>
             </div>
           </div>
@@ -76,15 +76,15 @@ export default function SettingsModal({ initial, onSave, onClose }) {
                 </div>
               )}
               <div className="settings-section">
-                <label className="settings-label">Model</label>
+                <label className="settings-label">Modell</label>
                 <select
                   className="settings-input"
                   value={settings.claude_model || "claude-sonnet-4-20250514"}
                   onChange={(e) => set("claude_model", e.target.value)}
                 >
-                  <option value="claude-opus-4-20250514">Claude Opus 4 (most capable)</option>
-                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (recommended)</option>
-                  <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (fastest)</option>
+                  <option value="claude-opus-4-20250514">Claude Opus 4 (mest kapabel)</option>
+                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (rekommenderad)</option>
+                  <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (snabbast)</option>
                 </select>
               </div>
             </div>
@@ -126,16 +126,16 @@ export default function SettingsModal({ initial, onSave, onClose }) {
               rows={4}
               value={settings.system_prompt || ""}
               onChange={(e) => set("system_prompt", e.target.value)}
-              placeholder="Instructions for how the AI should behave…"
+              placeholder="Instruktioner för hur AI:n ska bete sig…"
             />
           </div>
         </div>
 
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-secondary" onClick={onClose}>Avbryt</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             <Save size={14} />
-            {saving ? "Saving…" : "Save Settings"}
+            {saving ? "Sparar…" : "Spara inställningar"}
           </button>
         </div>
       </div>

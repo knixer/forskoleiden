@@ -67,7 +67,7 @@ export default function App() {
   }
 
   async function handleDeleteChild(child) {
-    if (!confirm(`Remove ${child.name} and all their notes?`)) return;
+    if (!confirm(`Ta bort ${child.name} och alla deras anteckningar?`)) return;
     await deleteChild(child.id);
     setChildren((prev) => prev.filter((c) => c.id !== child.id));
     if (selectedChild?.id === child.id) {
@@ -79,7 +79,7 @@ export default function App() {
     return (
       <div className="loading-screen">
         <div className="loading-spinner" />
-        <span>Loading CareDoc…</span>
+        <span>Laddar CareDoc…</span>
       </div>
     );
   }
@@ -111,8 +111,8 @@ export default function App() {
         ) : (
           <div className="empty-state">
             <div className="empty-icon">📋</div>
-            <h2>No child selected</h2>
-            <p>Add a child in the sidebar to start documenting.</p>
+            <h2>Inget barn valt</h2>
+            <p>Lägg till ett barn i sidofältet för att börja dokumentera.</p>
           </div>
         )}
       </main>

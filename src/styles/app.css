@@ -1140,9 +1140,23 @@ textarea.settings-input { resize: vertical; line-height: 1.6; min-height: 80px; 
 }
 
 .topic-alert-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   font-size: 12px;
   color: var(--accent-dark);
   line-height: 1.5;
+}
+.topic-alert-suggestion ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.topic-alert-suggestion li::before {
+  content: "• ";
 }
 
 .topic-analyze-btn {

@@ -66,14 +66,14 @@ export default function NoteView({ child, aiSettings, onMenuClick, onAlertChange
           </button>
           <div className="child-header-avatar">{child.name[0].toUpperCase()}</div>
           <h1 className="note-view-title">{child.name}</h1>
-          <div className="note-count-badge">{totalNotes} note{totalNotes !== 1 ? "s" : ""}</div>
+          <div className="note-count-badge">{totalNotes} anteckning{totalNotes !== 1 ? "ar" : ""}</div>
         </div>
         <button
           className={`ai-toggle-btn ${showAI ? "active" : ""}`}
           onClick={() => setShowAI((v) => !v)}
         >
           <Bot size={16} />
-          {showAI ? "Hide AI" : "Ask AI"}
+          {showAI ? "Dölj AI" : "Fråga AI"}
         </button>
       </div>
 

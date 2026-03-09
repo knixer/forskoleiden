@@ -35,30 +35,30 @@ export default function NoteCard({ note, index, onUpdate, onDelete }) {
       <div className="note-card-body">
         <div className="note-card-meta">
           <time className="note-date">
-            {date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+            {date.toLocaleDateString("sv-SE", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
           </time>
           <time className="note-time">
-            {date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+            {date.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
           </time>
-          {isEdited && <span className="note-edited-badge">edited</span>}
+          {isEdited && <span className="note-edited-badge">redigerad</span>}
 
           <div className="note-actions">
             {!editing && (
               <>
-                <button className="note-action-btn" onClick={() => setEditing(true)} title="Edit">
+                <button className="note-action-btn" onClick={() => setEditing(true)} title="Redigera">
                   <Edit3 size={13} />
                 </button>
-                <button className="note-action-btn danger" onClick={() => onDelete(note.id)} title="Delete">
+                <button className="note-action-btn danger" onClick={() => onDelete(note.id)} title="Ta bort">
                   <Trash2 size={13} />
                 </button>
               </>
             )}
             {editing && (
               <>
-                <button className="note-action-btn success" onClick={handleSave} title="Save">
+                <button className="note-action-btn success" onClick={handleSave} title="Spara">
                   <Check size={13} />
                 </button>
-                <button className="note-action-btn" onClick={handleCancel} title="Cancel">
+                <button className="note-action-btn" onClick={handleCancel} title="Avbryt">
                   <X size={13} />
                 </button>
               </>

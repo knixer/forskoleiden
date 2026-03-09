@@ -172,32 +172,32 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
       <div className="topic-content">
         {/* Note composer */}
         <div className="note-composer">
-          <div className="composer-label">New entry — {activeTopic.label}</div>
+          <div className="composer-label">Ny anteckning — {activeTopic.label}</div>
           <textarea
             ref={textareaRef}
             className={`composer-textarea${isListening ? " listening" : ""}`}
-            placeholder="Document observations, behaviors, milestones…"
+            placeholder="Dokumentera observationer, beteenden, milstolpar…"
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={4}
           />
           <div className="composer-footer">
-            <span className="composer-hint">⌘ + Enter to save</span>
+            <span className="composer-hint">⌘ + Enter för att spara</span>
             <div className="composer-actions">
               {speechSupported && (
                 <button
                   className={`mic-btn${isListening ? " active" : ""}`}
                   onClick={toggleListening}
                   disabled={cleaningUp}
-                  title={isListening ? "Stop recording" : "Dictate note"}
+                  title={isListening ? "Stoppa inspelning" : "Diktera anteckning"}
                   type="button"
                 >
                   {cleaningUp
-                    ? <><Loader size={14} className="spin" /> Cleaning up…</>
+                    ? <><Loader size={14} className="spin" /> Bearbetar…</>
                     : isListening
-                      ? <><MicOff size={14} /> Stop</>
-                      : <><Mic size={14} /> Dictate</>
+                      ? <><MicOff size={14} /> Stoppa</>
+                      : <><Mic size={14} /> Diktera</>
                   }
                 </button>
               )}
@@ -207,7 +207,7 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
                 disabled={!newContent.trim() || saving}
               >
                 {saving ? <Loader size={14} className="spin" /> : <Plus size={14} />}
-                Add Entry
+                Lägg till
               </button>
             </div>
           </div>
@@ -221,12 +221,19 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
               <div className="topic-alert-texts">
                 <span className="topic-alert-summary">{currentAlert.response}</span>
                 {currentAlert.suggestion && (
-                  <span className="topic-alert-suggestion">💡 {currentAlert.suggestion}</span>
+                  <div className="topic-alert-suggestion">
+                    <span>💡</span>
+                    <ul>
+                      {currentAlert.suggestion.split("\n").filter(Boolean).map((point, i) => (
+                        <li key={i}>{point.replace(/^•\s*/, "")}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <span className="topic-analyze-hint">Run an analysis to assess this topic</span>
+            <span className="topic-analyze-hint">Kör en analys för att utvärdera detta ämne</span>
           )}
           <button
             className="topic-analyze-btn"
@@ -235,9 +242,9 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
             title={!aiSettings ? "Configure AI in Settings first" : ""}
           >
             {analyzing === activeTopicId ? (
-              <><Loader size={13} className="spin" /> Analyzing…</>
+              <><Loader size={13} className="spin" /> Analyserar…</>
             ) : (
-              <><RefreshCw size={13} /> Analyze</>
+              <><RefreshCw size={13} /> Analysera</>
             )}
           </button>
         </div>
@@ -246,7 +253,7 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
         {activeNotes.length === 0 ? (
           <div className="notes-empty">
             <div className="notes-empty-icon">📝</div>
-            <p>No entries yet for {activeTopic.label}. Start documenting above.</p>
+            <p>Inga anteckningar ännu för {activeTopic.label}. Börja dokumentera ovan.</p>
           </div>
         ) : (
           <div className="notes-list">

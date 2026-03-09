@@ -34,29 +34,29 @@ export default function Sidebar({ children, selected, onSelect, onAdd, onDelete,
             <input
               autoFocus
               className="add-input"
-              placeholder="Child's name…"
+              placeholder="Barnets namn…"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={handleKeyDown}
             />
             <div className="add-form-actions">
-              <button className="btn-confirm" onClick={handleAdd}>Add</button>
-              <button className="btn-cancel" onClick={() => { setAdding(false); setNewName(""); }}>Cancel</button>
+              <button className="btn-confirm" onClick={handleAdd}>Lägg till</button>
+              <button className="btn-cancel" onClick={() => { setAdding(false); setNewName(""); }}>Avbryt</button>
             </div>
           </div>
         ) : (
           <button className="add-child-btn" onClick={() => setAdding(true)}>
             <UserPlus size={15} />
-            Add Child
+            Lägg till barn
           </button>
         )}
       </div>
 
-      <div className="sidebar-label">CHILDREN</div>
+      <div className="sidebar-label">BARN</div>
 
       <nav className="child-list">
         {children.length === 0 && (
-          <div className="child-list-empty">No children added yet</div>
+          <div className="child-list-empty">Inga barn tillagda ännu</div>
         )}
         {children.map((child) => (
           <div
@@ -76,7 +76,7 @@ export default function Sidebar({ children, selected, onSelect, onAdd, onDelete,
                 <button
                   className="child-delete-btn"
                   onClick={(e) => { e.stopPropagation(); onDelete(child); }}
-                  title="Remove"
+                  title="Ta bort"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -92,7 +92,7 @@ export default function Sidebar({ children, selected, onSelect, onAdd, onDelete,
       <div className="sidebar-footer">
         <button className="settings-btn" onClick={onOpenSettings}>
           <Settings size={15} />
-          AI Settings
+          AI-inställningar
         </button>
       </div>
     </aside>

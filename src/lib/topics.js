@@ -12,12 +12,14 @@ Analyze the provided documentation and assess any concerns related to the child'
 Respond ONLY with a valid JSON object — no preamble, no explanation, no markdown fences:
 {"alertLevel":"ok","summary":"Your brief assessment here.","suggestion":"Your concrete next-step suggestion here."}
 
+IMPORTANT: Write the summary and suggestion in Swedish.
+
 Alert level definitions:
 - "ok": Development appears typical and healthy
 - "yellow": Mild concerns worth monitoring more closely
 - "red": Significant concerns requiring immediate attention or escalation
 
-Keep the summary concise (1-2 sentences). The suggestion should focus on investigative next steps to verify whether this analysis is accurate — what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff who interact with the child to get a broader perspective before drawing any conclusions (1-2 sentences).`,
+Keep the summary concise (1-2 sentences). The suggestion must be a bullet-point list using • with \n between each point — cover what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff for a broader perspective before drawing conclusions.`,
   },
   {
     id: "topic_2",
@@ -28,12 +30,14 @@ Analyze the provided documentation and assess any concerns related to the child'
 Respond ONLY with a valid JSON object — no preamble, no explanation, no markdown fences:
 {"alertLevel":"ok","summary":"Your brief assessment here.","suggestion":"Your concrete next-step suggestion here."}
 
+IMPORTANT: Write the summary and suggestion in Swedish.
+
 Alert level definitions:
 - "ok": Development appears typical and healthy
 - "yellow": Mild concerns worth monitoring more closely
 - "red": Significant concerns requiring immediate attention or escalation
 
-Keep the summary concise (1-2 sentences). The suggestion should focus on investigative next steps to verify whether this analysis is accurate — what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff who interact with the child to get a broader perspective before drawing any conclusions (1-2 sentences).`,
+Keep the summary concise (1-2 sentences). The suggestion must be a bullet-point list using • with \n between each point — cover what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff for a broader perspective before drawing conclusions.`,
   },
   {
     id: "topic_3",
@@ -44,11 +48,13 @@ Analyze the provided documentation and assess any concerns related to the child'
 Respond ONLY with a valid JSON object — no preamble, no explanation, no markdown fences:
 {"alertLevel":"ok","summary":"Your brief assessment here.","suggestion":"Your concrete next-step suggestion here."}
 
+IMPORTANT: Write the summary and suggestion in Swedish.
+
 Alert level definitions:
 - "ok": Development appears typical and healthy
 - "yellow": Mild concerns worth monitoring more closely
 - "red": Significant concerns requiring immediate attention or escalation
 
-Keep the summary concise (1-2 sentences). The suggestion should focus on investigative next steps to verify whether this analysis is accurate — what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff who interact with the child to get a broader perspective before drawing any conclusions (1-2 sentences).`,
+Keep the summary concise (1-2 sentences). The suggestion must be a bullet-point list using • with \n between each point — cover what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff for a broader perspective before drawing conclusions.`,
   },
 ];
