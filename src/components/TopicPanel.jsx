@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Plus, Loader, RefreshCw } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Loader, RefreshCw, Mic, MicOff } from "lucide-react";
 import { TOPICS } from "../lib/topics";
 import { addNote, updateNote, deleteNote, saveTopicAlert } from "../lib/db";
 import { analyzeTopicNotes } from "../lib/ai";
@@ -16,7 +16,49 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
   const [newContent, setNewContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(null); // topicId currently being analyzed
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const speechSupported = typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  // Stop recognition when switching tabs
+  useEffect(() => {
+    return () => recognitionRef.current?.stop();
+  }, [activeTopicId]);
+
+  function toggleListening() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = "sv-SE";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    let committed = newContent; // preserve text already in the box
+
+    recognition.onresult = (e) => {
+      let interim = "";
+      let final = "";
+      for (const result of e.results) {
+        if (result.isFinal) final += result[0].transcript;
+        else interim += result[0].transcript;
+      }
+      committed = committed + final;
+      setNewContent(committed + (interim ? " " + interim : ""));
+    };
+
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.start();
+    setIsListening(true);
+  }
 
   const activeTopic = TOPICS.find((t) => t.id === activeTopicId);
   const activeNotes = notesByTopic[activeTopicId] ?? [];
@@ -116,7 +158,7 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
           <div className="composer-label">New entry — {activeTopic.label}</div>
           <textarea
             ref={textareaRef}
-            className="composer-textarea"
+            className={`composer-textarea${isListening ? " listening" : ""}`}
             placeholder="Document observations, behaviors, milestones…"
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
@@ -125,14 +167,27 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
           />
           <div className="composer-footer">
             <span className="composer-hint">⌘ + Enter to save</span>
-            <button
-              className="composer-submit"
-              onClick={handleAddNote}
-              disabled={!newContent.trim() || saving}
-            >
-              {saving ? <Loader size={14} className="spin" /> : <Plus size={14} />}
-              Add Entry
-            </button>
+            <div className="composer-actions">
+              {speechSupported && (
+                <button
+                  className={`mic-btn${isListening ? " active" : ""}`}
+                  onClick={toggleListening}
+                  title={isListening ? "Stop recording" : "Dictate note"}
+                  type="button"
+                >
+                  {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                  {isListening ? "Stop" : "Dictate"}
+                </button>
+              )}
+              <button
+                className="composer-submit"
+                onClick={handleAddNote}
+                disabled={!newContent.trim() || saving}
+              >
+                {saving ? <Loader size={14} className="spin" /> : <Plus size={14} />}
+                Add Entry
+              </button>
+            </div>
           </div>
         </div>
 
