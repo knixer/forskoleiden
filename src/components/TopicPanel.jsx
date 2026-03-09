@@ -40,17 +40,22 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
     recognition.continuous = true;
     recognitionRef.current = recognition;
 
-    let committed = newContent; // preserve text already in the box
+    let committedText = newContent;
+    let lastFinalIndex = 0;
 
     recognition.onresult = (e) => {
+      let newFinal = "";
       let interim = "";
-      let final = "";
-      for (const result of e.results) {
-        if (result.isFinal) final += result[0].transcript;
-        else interim += result[0].transcript;
+      for (let i = lastFinalIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          newFinal += e.results[i][0].transcript;
+          lastFinalIndex = i + 1;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
       }
-      committed = committed + final;
-      setNewContent(committed + (interim ? " " + interim : ""));
+      committedText += newFinal;
+      setNewContent(committedText + interim);
     };
 
     recognition.onend = () => setIsListening(false);
