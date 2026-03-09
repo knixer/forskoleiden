@@ -1154,6 +1154,8 @@ textarea.settings-input { resize: vertical; line-height: 1.6; min-height: 80px; 
   display: flex;
   flex-direction: column;
   gap: 3px;
+  flex: 1;
+  min-width: 0;
 }
 .topic-alert-suggestion li::before {
   content: "• ";
