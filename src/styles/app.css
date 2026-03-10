@@ -1139,6 +1139,39 @@ textarea.settings-input { resize: vertical; line-height: 1.6; min-height: 80px; 
   line-height: 1.5;
 }
 
+.topic-alert-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+.topic-alert-sources-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.topic-alert-source-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.source-meta {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.source-excerpt {
+  font-size: 12px;
+  color: var(--text-2);
+  font-style: italic;
+  line-height: 1.4;
+}
+
 .topic-alert-suggestion {
   display: flex;
   align-items: flex-start;

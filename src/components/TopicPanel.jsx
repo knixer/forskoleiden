@@ -133,9 +133,10 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
       const level = ["ok", "yellow", "red"].includes(parsed.alertLevel) ? parsed.alertLevel : "yellow";
       const summary = parsed.summary ?? raw.slice(0, 300);
       const suggestion = parsed.suggestion ?? null;
+      const sources = Array.isArray(parsed.sources) ? parsed.sources : [];
 
-      await saveTopicAlert(child.id, activeTopicId, level, summary, suggestion);
-      onAlertChange(activeTopicId, level, summary, suggestion);
+      await saveTopicAlert(child.id, activeTopicId, level, summary, suggestion, sources);
+      onAlertChange(activeTopicId, level, summary, suggestion, sources);
     } finally {
       setAnalyzing(null);
     }
@@ -220,6 +221,23 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
               <span className={`alert-dot ${currentAlert.level}`} />
               <div className="topic-alert-texts">
                 <span className="topic-alert-summary">{currentAlert.response}</span>
+                {currentAlert.sources?.length > 0 && (
+                  <div className="topic-alert-sources">
+                    <span className="topic-alert-sources-label">Baserat på:</span>
+                    {currentAlert.sources.map((idx) => {
+                      const note = activeNotes[idx - 1];
+                      if (!note) return null;
+                      const excerpt = note.content.length > 120 ? note.content.slice(0, 120) + "…" : note.content;
+                      const date = new Date(note.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+                      return (
+                        <div key={idx} className="topic-alert-source-item">
+                          <span className="source-meta">📝 {date}</span>
+                          <span className="source-excerpt">"{excerpt}"</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {currentAlert.suggestion && (
                   <div className="topic-alert-suggestion">
                     <span>💡</span>

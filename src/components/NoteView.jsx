@@ -40,8 +40,8 @@ export default function NoteView({ child, aiSettings, onMenuClick, onAlertChange
     setNotesByTopic((prev) => ({ ...prev, [topicId]: newNotes }));
   }
 
-  function handleAlertChange(topicId, level, response, suggestion) {
-    setTopicAlerts((prev) => ({ ...prev, [topicId]: { level, response, suggestion } }));
+  function handleAlertChange(topicId, level, response, suggestion, sources) {
+    setTopicAlerts((prev) => ({ ...prev, [topicId]: { level, response, suggestion, sources } }));
     onAlertChange?.(child.id, topicId, level);
   }
 

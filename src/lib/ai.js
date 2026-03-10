@@ -116,7 +116,7 @@ export async function cleanTranscript(settings, rawText) {
  */
 export async function analyzeTopicNotes(settings, childName, notes, topicPrompt) {
   const notesText = notes.length > 0
-    ? notes.map((n) => `[${new Date(n.created_at).toLocaleString()}]\n${n.content}`).join("\n\n---\n\n")
+    ? notes.map((n, i) => `[${i + 1}] [${new Date(n.created_at).toLocaleString()}]\n${n.content}`).join("\n\n---\n\n")
     : "(No notes documented yet for this topic)";
 
   const userMessage = `Reviewing documentation for a child named "${childName}".\n\nNotes for this topic:\n\n${notesText}`;
@@ -148,7 +148,7 @@ async function callClaudeForTopic(settings, systemPrompt, userMessage) {
     },
     body: JSON.stringify({
       model: settings.claude_model || "claude-sonnet-4-20250514",
-      max_tokens: 256,
+      max_tokens: 512,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
     }),

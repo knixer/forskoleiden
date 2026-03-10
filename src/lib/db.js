@@ -73,21 +73,21 @@ export async function deleteNote(id) {
 export async function fetchTopicAlerts(childId) {
   const { data, error } = await supabase
     .from("topic_alerts")
-    .select("topic_id, alert_level, response, suggestion, analyzed_at")
+    .select("topic_id, alert_level, response, suggestion, sources, analyzed_at")
     .eq("child_id", childId);
   if (error) return {}; // table may not exist yet — fail silently
   const map = {};
   for (const row of data) {
-    map[row.topic_id] = { level: row.alert_level, response: row.response, suggestion: row.suggestion, analyzedAt: row.analyzed_at };
+    map[row.topic_id] = { level: row.alert_level, response: row.response, suggestion: row.suggestion, sources: row.sources ? JSON.parse(row.sources) : [], analyzedAt: row.analyzed_at };
   }
   return map;
 }
 
-export async function saveTopicAlert(childId, topicId, alertLevel, response, suggestion) {
+export async function saveTopicAlert(childId, topicId, alertLevel, response, suggestion, sources) {
   const { error } = await supabase
     .from("topic_alerts")
     .upsert(
-      { child_id: childId, topic_id: topicId, alert_level: alertLevel, response, suggestion, analyzed_at: new Date().toISOString() },
+      { child_id: childId, topic_id: topicId, alert_level: alertLevel, response, suggestion, sources: sources?.length ? JSON.stringify(sources) : null, analyzed_at: new Date().toISOString() },
       { onConflict: "child_id,topic_id" }
     );
   raise(error);
