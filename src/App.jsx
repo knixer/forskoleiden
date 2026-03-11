@@ -48,7 +48,7 @@ export default function App() {
   }
 
   // Derive the worst alert level per child across all their topics.
-  const LEVEL_RANK = { ok: 0, yellow: 1, red: 2 };
+  const LEVEL_RANK = { ok: 0, addressed: 0, yellow: 1, red: 2 };
   const childAlerts = {};
   for (const [childId, topics] of Object.entries(childTopicAlerts)) {
     let worst = "ok";

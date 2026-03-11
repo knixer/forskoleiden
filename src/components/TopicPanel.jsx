@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, Loader, RefreshCw, Mic, MicOff } from "lucide-react";
+import { Plus, Loader, RefreshCw, Mic, MicOff, CheckCircle, Calendar } from "lucide-react";
 import { TOPICS } from "../lib/topics";
-import { addNote, updateNote, deleteNote, saveTopicAlert } from "../lib/db";
+import { addNote, updateNote, deleteNote, saveTopicAlert, fetchActionPlans, saveActionPlan, createFollowUp } from "../lib/db";
 import { analyzeTopicNotes, cleanTranscript } from "../lib/ai";
 import NoteCard from "./NoteCard";
 
@@ -18,11 +18,42 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
   const [analyzing, setAnalyzing] = useState(null); // topicId currently being analyzed
   const [isListening, setIsListening] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
+  // Action plan state
+  const [actionPlans, setActionPlans] = useState({}); // { topicId: plan }
+  const [planDrafts, setPlanDrafts] = useState({}); // { topicId: string }
+  const [planDays, setPlanDays] = useState({}); // { topicId: number }
+  const [savingPlan, setSavingPlan] = useState(null); // topicId being saved
+  // Manual follow-up scheduling per topic
+  const [schedulingTopic, setSchedulingTopic] = useState(null); // topicId showing the schedule form
+  const [scheduleDays, setScheduleDays] = useState(7);
+  const [schedulingFollowUp, setSchedulingFollowUp] = useState(false);
+  // Which topics have their analysis detail expanded in the AP tab
+  const [expandedTopics, setExpandedTopics] = useState(new Set());
+  const toggleExpanded = (topicId) =>
+    setExpandedTopics((prev) => {
+      const next = new Set(prev);
+      next.has(topicId) ? next.delete(topicId) : next.add(topicId);
+      return next;
+    });
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
 
   const speechSupported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  // Load action plans whenever the child changes or the action-plan tab is opened
+  useEffect(() => {
+    loadActionPlans();
+  }, [child.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadActionPlans() {
+    try {
+      const plans = await fetchActionPlans(child.id);
+      setActionPlans(plans);
+    } catch {
+      // table may not exist yet
+    }
+  }
 
   // Stop recognition when switching tabs
   useEffect(() => {
@@ -80,6 +111,18 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
   const activeTopic = TOPICS.find((t) => t.id === activeTopicId);
   const activeNotes = notesByTopic[activeTopicId] ?? [];
 
+  // Topics that have a non-ok, non-addressed alert (need action plan)
+  const alertTopics = TOPICS.filter((t) => {
+    const a = alerts[t.id];
+    return a && a.level !== "ok" && !t.isActionPlan;
+  });
+  // Topics that have been addressed (have action plan)
+  const addressedTopics = TOPICS.filter((t) => {
+    const a = alerts[t.id];
+    return a && a.level === "addressed" && !t.isActionPlan;
+  });
+  const apBadgeCount = alertTopics.length; // unaddressed warnings
+
   async function handleAddNote() {
     const content = newContent.trim();
     if (!content) return;
@@ -112,6 +155,45 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
   async function handleDeleteNote(id) {
     await deleteNote(id);
     onNotesChange(activeTopicId, activeNotes.filter((n) => n.id !== id));
+  }
+
+  async function handleSaveActionPlan(topicId) {
+    const content = (planDrafts[topicId] ?? "").trim();
+    if (!content) return;
+    const days = planDays[topicId] ?? 14;
+    setSavingPlan(topicId);
+    try {
+      const planId = await saveActionPlan(child.id, topicId, content, days);
+      const newPlan = {
+        id: planId,
+        child_id: child.id,
+        topic_id: topicId,
+        content,
+        follow_up_days: days,
+        created_at: new Date().toISOString(),
+      };
+      setActionPlans((prev) => ({ ...prev, [topicId]: newPlan }));
+      setPlanDrafts((prev) => ({ ...prev, [topicId]: "" }));
+      // Notify parent — keep the raw level but mark as addressed
+      const currentAlert = alerts[topicId];
+      if (currentAlert) {
+        onAlertChange(topicId, "addressed", currentAlert.response, currentAlert.suggestion, currentAlert.sources);
+      }
+    } finally {
+      setSavingPlan(null);
+    }
+  }
+
+  async function handleScheduleFollowUp(topicId) {
+    const plan = actionPlans[topicId];
+    setSchedulingFollowUp(true);
+    try {
+      await createFollowUp(child.id, topicId, plan?.id ?? null, "review", scheduleDays);
+      setSchedulingTopic(null);
+      setScheduleDays(7);
+    } finally {
+      setSchedulingFollowUp(false);
+    }
   }
 
   async function handleAnalyze() {
@@ -154,6 +236,23 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
       <div className="topic-tabs">
         {TOPICS.map((topic) => {
           const alert = alerts[topic.id];
+          if (topic.isActionPlan) {
+            return (
+              <button
+                key={topic.id}
+                className={`topic-tab ap-tab ${activeTopicId === topic.id ? "active" : ""}`}
+                onClick={() => { setActiveTopicId(topic.id); setNewContent(""); }}
+              >
+                {topic.label}
+                {apBadgeCount > 0 && (
+                  <span className="ap-badge">{apBadgeCount}</span>
+                )}
+                {apBadgeCount === 0 && addressedTopics.length > 0 && (
+                  <span className="alert-dot addressed" title="Alla varningar har åtgärdats" />
+                )}
+              </button>
+            );
+          }
           return (
             <button
               key={topic.id}
@@ -171,6 +270,262 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
 
       {/* Active topic content */}
       <div className="topic-content">
+        {activeTopic?.isActionPlan ? (
+          // ── Action Plan panel ──
+          <div className="ap-panel">
+            {alertTopics.length === 0 && addressedTopics.length === 0 ? (
+              <div className="ap-empty">
+                <CheckCircle size={32} className="ap-empty-icon" />
+                <p>Inga aktiva varningar. Alla ämnen ser bra ut.</p>
+              </div>
+            ) : (
+              <>
+                {/* Unaddressed alerts first */}
+                {alertTopics.map((topic) => {
+                  const alert = alerts[topic.id];
+                  const draft = planDrafts[topic.id] ?? "";
+                  const days = planDays[topic.id] ?? 14;
+                  return (
+                    <div key={topic.id} className="ap-topic-section">
+                      <div className="ap-topic-header">
+                        <span className={`alert-dot ${alert.level}`} />
+                        <span className="ap-topic-label">{topic.label}</span>
+                        {alert.analyzedAt && (
+                          <span className="ap-topic-date">
+                            Varning sedan {new Date(alert.analyzedAt).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
+                          </span>
+                        )}
+                      </div>
+                      {alert.response && (
+                        <p className="ap-alert-summary">{alert.response}</p>
+                      )}
+                      <button
+                        className="ap-toggle-btn"
+                        onClick={() => toggleExpanded(topic.id)}
+                      >
+                        {expandedTopics.has(topic.id) ? "Visa mindre ▴" : "Visa mer ▾"}
+                      </button>
+                      {expandedTopics.has(topic.id) && (
+                        <>
+                      {alert.suggestion && (
+                        <div className="ap-alert-suggestion">
+                          <strong>💡 Förslag på hur man kan gå vidare:</strong>
+                          <ul>
+                            {alert.suggestion.split(/[\n•]+/).filter(s => s.trim()).map((point, i) => (
+                              <li key={i}>{point.trim()}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {alert.sources?.length > 0 && (
+                        <div className="ap-alert-sources">
+                          <span className="ap-alert-sources-label">Baserat på:</span>
+                          {alert.sources.map((idx) => {
+                            const note = (notesByTopic[topic.id] ?? [])[idx - 1];
+                            if (!note) return null;
+                            const excerpt = note.content.length > 120 ? note.content.slice(0, 120) + "…" : note.content;
+                            const date = new Date(note.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+                            return (
+                              <div key={idx} className="ap-alert-source-item">
+                                <span className="source-meta">📝 {date}</span>
+                                <span className="source-excerpt">"{excerpt}"</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                        </>
+                      )}
+                      <div className="ap-form">
+                        <label className="ap-form-label">Beskriv åtgärdsplanen</label>
+                        <textarea
+                          className="ap-textarea"
+                          rows={4}
+                          placeholder="Vilka åtgärder ska vidtas? Vem ansvarar? Vad följs upp?…"
+                          value={draft}
+                          onChange={(e) => setPlanDrafts((p) => ({ ...p, [topic.id]: e.target.value }))}
+                        />
+                        <div className="ap-form-footer">
+                          <label className="ap-days-label">
+                            Uppföljning om
+                            <input
+                              type="number"
+                              min={1}
+                              max={365}
+                              className="ap-days-input"
+                              value={days}
+                              onChange={(e) => setPlanDays((p) => ({ ...p, [topic.id]: Number(e.target.value) }))}
+                            />
+                            dagar
+                          </label>
+                          <button
+                            className="ap-save-btn"
+                            onClick={() => handleSaveActionPlan(topic.id)}
+                            disabled={!draft.trim() || savingPlan === topic.id}
+                          >
+                            {savingPlan === topic.id
+                              ? <><Loader size={13} className="spin" /> Sparar…</>
+                              : <><CheckCircle size={13} /> Spara åtgärdsplan</>
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Addressed topics */}
+                {addressedTopics.map((topic) => {
+                  const alert = alerts[topic.id];
+                  const plan = actionPlans[topic.id];
+                  const draft = planDrafts[topic.id] ?? "";
+                  const days = planDays[topic.id] ?? 14;
+                  const followUpDate = plan
+                    ? new Date(new Date(plan.created_at).getTime() + plan.follow_up_days * 86_400_000)
+                        .toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })
+                    : null;
+                  return (
+                    <div key={topic.id} className="ap-topic-section addressed">
+                      <div className="ap-topic-header">
+                        <span className="alert-dot addressed" />
+                        <span className="ap-topic-label">{topic.label}</span>
+                        <span className="ap-addressed-badge">Hanterad</span>
+                      </div>
+                      {alert.response && (
+                        <p className="ap-alert-summary">{alert.response}</p>
+                      )}
+                      <button
+                        className="ap-toggle-btn"
+                        onClick={() => toggleExpanded(topic.id)}
+                      >
+                        {expandedTopics.has(topic.id) ? "Visa mindre ▴" : "Visa mer ▾"}
+                      </button>
+                      {expandedTopics.has(topic.id) && (
+                        <>
+                      {alert.suggestion && (
+                        <div className="ap-alert-suggestion">
+                          <strong>💡 Förslag på hur man kan gå vidare:</strong>
+                          <ul>
+                            {alert.suggestion.split(/[\n•]+/).filter(s => s.trim()).map((point, i) => (
+                              <li key={i}>{point.trim()}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {alert.sources?.length > 0 && (
+                        <div className="ap-alert-sources">
+                          <span className="ap-alert-sources-label">Baserat på:</span>
+                          {alert.sources.map((idx) => {
+                            const note = (notesByTopic[topic.id] ?? [])[idx - 1];
+                            if (!note) return null;
+                            const excerpt = note.content.length > 120 ? note.content.slice(0, 120) + "…" : note.content;
+                            const date = new Date(note.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+                            return (
+                              <div key={idx} className="ap-alert-source-item">
+                                <span className="source-meta">📝 {date}</span>
+                                <span className="source-excerpt">"{excerpt}"</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                        </>
+                      )}
+                      {plan && (
+                        <div className="ap-existing-plan">
+                          <div className="ap-existing-header">
+                            <span className="ap-existing-date">
+                              Åtgärdsplan skapad {new Date(plan.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                            {followUpDate && (
+                              <span className="ap-followup-date"><Calendar size={11} /> Uppföljning planerad {followUpDate}</span>
+                            )}
+                          </div>
+                          <p className="ap-existing-content">{plan.content}</p>
+                        </div>
+                      )}
+                      {/* Manual follow-up scheduling */}
+                      {schedulingTopic === topic.id ? (
+                        <div className="ap-schedule-form">
+                          <label className="ap-days-label">
+                            Lägg till uppföljning om
+                            <input
+                              type="number"
+                              min={1}
+                              max={365}
+                              className="ap-days-input"
+                              value={scheduleDays}
+                              onChange={(e) => setScheduleDays(Number(e.target.value))}
+                            />
+                            dagar
+                          </label>
+                          <div className="ap-schedule-actions">
+                            <button
+                              className="ap-save-btn"
+                              onClick={() => handleScheduleFollowUp(topic.id)}
+                              disabled={schedulingFollowUp}
+                            >
+                              {schedulingFollowUp
+                                ? <><Loader size={13} className="spin" /> Sparar…</>
+                                : <><Calendar size={13} /> Bekräfta</>
+                              }
+                            </button>
+                            <button className="ap-cancel-btn" onClick={() => setSchedulingTopic(null)}>Avbryt</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          className="ap-schedule-trigger"
+                          onClick={() => { setSchedulingTopic(topic.id); setScheduleDays(7); }}
+                        >
+                          <Calendar size={13} /> Lägg till uppföljningsavisering
+                        </button>
+                      )}
+                      {/* Allow submitting a new/updated action plan */}
+                      <div className="ap-form ap-form-update">
+                        <label className="ap-form-label">Uppdatera åtgärdsplan (valfritt)</label>
+                        <textarea
+                          className="ap-textarea"
+                          rows={3}
+                          placeholder="Skriv en ny åtgärdsplan för att ersätta den befintliga…"
+                          value={draft}
+                          onChange={(e) => setPlanDrafts((p) => ({ ...p, [topic.id]: e.target.value }))}
+                        />
+                        {draft.trim() && (
+                          <div className="ap-form-footer">
+                            <label className="ap-days-label">
+                              Uppföljning om
+                              <input
+                                type="number"
+                                min={1}
+                                max={365}
+                                className="ap-days-input"
+                                value={days}
+                                onChange={(e) => setPlanDays((p) => ({ ...p, [topic.id]: Number(e.target.value) }))}
+                              />
+                              dagar
+                            </label>
+                            <button
+                              className="ap-save-btn"
+                              onClick={() => handleSaveActionPlan(topic.id)}
+                              disabled={savingPlan === topic.id}
+                            >
+                              {savingPlan === topic.id
+                                ? <><Loader size={13} className="spin" /> Sparar…</>
+                                : <><CheckCircle size={13} /> Spara ny plan</>
+                              }
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Note composer */}
         <div className="note-composer">
           <div className="composer-label">Ny anteckning — {activeTopic.label}</div>
@@ -288,6 +643,8 @@ export default function TopicPanel({ child, notesByTopic, alerts, aiSettings, on
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

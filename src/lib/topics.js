@@ -5,7 +5,7 @@
 export const TOPICS = [
   {
     id: "topic_1",
-    label: "Dokumentation",
+    label: "Daganteckningar",
     prompt: `You are a child welfare specialist reviewing kindergarten care notes.
 Analyze the provided documentation and assess any concerns related to the child's social development and peer interactions.
 
@@ -56,5 +56,11 @@ Alert level definitions:
 - "red": Significant concerns requiring immediate attention or escalation
 
 Keep the summary concise (1-2 sentences). The suggestion must be a bullet-point list using • with \n between each point — cover what specific behaviors or situations to observe more closely, what questions to explore, and recommend consulting other kindergarten staff for a broader perspective before drawing conclusions. The sources field must be an array of note numbers (the [N] prefix in the notes list) that directly support your summary conclusion.`,
+  },
+  {
+    id: "topic_ap",
+    label: "Åtgärdsplaner",
+    isActionPlan: true,
+    prompt: null,
   },
 ];
